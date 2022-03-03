@@ -58,9 +58,14 @@ class FFNN:
         return x
     
     def softmax(self, x):
-        return np.exp(x)/np.sum(np.exp(x))
+        net_h = np.array(x)
+        numerator = np.exp(net_h)
+        denominator = np.sum(np.exp(x))
+        softmax_output = numerator / denominator
+        return softmax_output
 
 if __name__ == "__main__":
     n_input = 2
     node_per_layer = [5,5,2]
-    print(FFNN(n_input, node_per_layer).showLayer())
+    # print(FFNN(n_input, node_per_layer).showLayer(node_per_layer))
+    print(FFNN(n_input, node_per_layer).softmax(node_per_layer))
