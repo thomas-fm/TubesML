@@ -1,0 +1,13 @@
+digraph "Feed Forward Neural Network" {
+	edge [arrowhead=vee arrowsize=2]
+	node [shape=circle width=1.0]
+	bx0 -> h1_0 [label=-10.0]
+	bx0 -> h1_1 [label=30.0]
+	x1 -> h1_0 [label=20.0]
+	x1 -> h1_1 [label=-20.0]
+	x2 -> h1_0 [label=20.0]
+	x2 -> h1_1 [label=-20.0]
+	bh1 -> h2_0 [label=-30.0]
+	h1_0 -> h2_0 [label=20.0]
+	h1_1 -> h2_0 [label=20.0]
+}
