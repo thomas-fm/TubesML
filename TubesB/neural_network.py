@@ -130,13 +130,13 @@ class NeuralNetwork:
                     x = self.layers[i].output[j][k]
                     result = 0
                     if (self.layers[i].activations.lower() == "linier"):
-                        result = format(linear(x), ".2f")
+                        result = format(linear(x))
                     elif (self.layers[i].activations.lower() == "sigmoid"):
-                        result = format(sigmoid(x), ".2f")
+                        result = format(sigmoid(x))
                     elif (self.layers[i].activations.lower() == "relu"):
-                        result = format(relu(x), ".2f")
+                        result = format(relu(x))
                     elif (self.layers[i].activations.lower() == "softmax"):
-                        result = format(softmax(x), ".2f")
+                        result = format(softmax(x))
                     else: # if activation is not linier, relu, sigmoid, or softmax
                         print(f"{self.layers[i].activations}: Invalid activation method!")
                         return
@@ -147,7 +147,7 @@ class NeuralNetwork:
                 if (i < self.n_layers): # if there is still the next layer
                     self.layers[i+1].input.append(input_next_layer) # append input for next layer in layers[i+1].input
 
-                # print(f"Output : {self.layers[i].output}")
+            # print(f"Output : {self.layers[i].output}")
 
         # output in the last layer
         self.output = self.layers[-1].output.copy()
