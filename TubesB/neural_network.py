@@ -86,7 +86,12 @@ class NeuralNetwork:
             layer.activations = activation[i]
 
             self.layers.append(layer)
-            print(layer.weights)
+
+        # add last layer, last hidden to output
+        layer = Layer(n_neuron[n_layers-1] + 1, n_output)
+        layer.weights = [[random() for i in range(n_neuron[i-1]+1)] for j in range(n_neuron[i])]
+        layer.activations = activation[-1]
+        self.layers.append(layer)
 
     # todo
     def forward_propagation(self):
@@ -122,4 +127,4 @@ class NeuralNetwork:
         return
 
 seed(1)
-nn = NeuralNetwork(n_layers=3, n_neuron=[2, 3, 4], activation=["sigmoid","sigmoid","sigmoid"])
+nn = NeuralNetwork(n_layers=3, n_neuron=[2, 3, 4], activation=["sigmoid","sigmoid","sigmoid", "relu"])
