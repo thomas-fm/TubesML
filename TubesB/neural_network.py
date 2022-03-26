@@ -1,6 +1,6 @@
 import numpy as np
 from random import seed
-from random import random
+from random import random, uniform
 from sklearn.datasets import load_iris
 
 def linear(x):
@@ -78,10 +78,10 @@ class NeuralNetwork:
             # n input = n neuron in layer
             if i == 0:
                 layer = Layer(self.n_attr+1, n_neuron[i])
-                layer.weights = [[random() for i in range(self.n_attr+1)] for j in range(n_neuron[i])]
+                layer.weights = [[uniform(-0.5,0.5) for i in range(n_neuron[i])] for j in range(self.n_attr+1)]
             else:
                 layer = Layer(n_neuron[i-1]+1, n_neuron[i])
-                layer.weights = [[random() for i in range(n_neuron[i-1]+1)] for j in range(n_neuron[i])]
+                layer.weights = [[uniform(-0.5,0.5) for i in range(n_neuron[i])] for j in range(n_neuron[i-1]+1)]
             # initalize weight
             layer.activations = activation[i]
 
@@ -95,7 +95,62 @@ class NeuralNetwork:
 
     # todo
     def forward_propagation(self):
-        return
+        # The first input layer
+        self.layers[0].input = self.input
+
+        # All hidden layers
+        for i in range(self.n_layers):
+            # add bias
+            bias_input = self.bias
+            if (i == 0): # if first hidden layer, convert to array from ndarray and then add bias in the last index
+                temp_input = []
+                for j in range(len(self.layers[i].input)):
+                    input_row = []
+                    for k in range(len(self.layers[i].input[j])):
+                        input_row.append(self.layers[i].input[j][k])
+                    input_row.append(bias_input)
+                    temp_input.append(input_row)
+                self.layers[i].input = temp_input
+            else: # if not first layer the immediately add the bias in the last index
+                for j in range(len(self.layers[i].input)):
+                    self.layers[i].input[j].append(bias_input)
+
+            # calculate sigma
+            self.layers[i].output  = np.dot(self.layers[i].input, self.layers[i].weights)
+
+            # print(f"------- Layer: {i+1} -------")
+            # print(f"Activation : {self.layers[i].activations}")
+            # print(f"Input : {self.layers[i].input}")
+            # print(f"Weight : {self.layers[i].weights}")
+            
+            # activation function
+            for j in range(len(self.layers[i].output)):
+                input_next_layer = [] # temporary list to store the next layer's input
+                for k in range(len(self.layers[i].output[j])):
+                    x = self.layers[i].output[j][k]
+                    result = 0
+                    if (self.layers[i].activations.lower() == "linier"):
+                        result = format(linear(x), ".2f")
+                    elif (self.layers[i].activations.lower() == "sigmoid"):
+                        result = format(sigmoid(x), ".2f")
+                    elif (self.layers[i].activations.lower() == "relu"):
+                        result = format(relu(x), ".2f")
+                    elif (self.layers[i].activations.lower() == "softmax"):
+                        result = format(softmax(x), ".2f")
+                    else: # if activation is not linier, relu, sigmoid, or softmax
+                        print(f"{self.layers[i].activations}: Invalid activation method!")
+                        return
+                    
+                    self.layers[i].output[j][k] = result # append output, actually layers[i].output == layers[i+1].input
+                    input_next_layer.append(float(result)) # append input for next layer in temporary list (input_next_layer)
+
+                if (i+1 < self.n_layers): # if there is still the next layer
+                    self.layers[i+1].input.append(input_next_layer) # append input for next layer in layers[i+1].input
+
+                # print(f"Output : {self.layers[i].output}")
+
+        # output in the last layer
+        self.output = self.layers[self.n_layers-1].output.copy()
 
     # todo
     def error_output(self):
@@ -127,4 +182,5 @@ class NeuralNetwork:
         return
 
 seed(1)
-nn = NeuralNetwork(n_layers=3, n_neuron=[2, 3, 4], activation=["sigmoid","sigmoid","sigmoid", "relu"])
+nn = NeuralNetwork(n_layers=2, n_neuron=[3,4], activation=["sigmoid", "relu"])
+nn.forward_propagation()
