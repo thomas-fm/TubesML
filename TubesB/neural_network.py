@@ -88,8 +88,8 @@ class NeuralNetwork:
             self.layers.append(layer)
 
         # add last layer, last hidden to output
-        layer = Layer(n_neuron[n_layers-1] + 1, n_output)
-        layer.weights = [[random() for i in range(n_neuron[i-1]+1)] for j in range(n_neuron[i])]
+        layer = Layer(n_neuron[-1] + 1, n_output)
+        layer.weights = [[uniform(-0.5,0.5) for i in range(n_output)] for j in range(n_neuron[-1] + 1)]
         layer.activations = activation[-1]
         self.layers.append(layer)
 
@@ -99,7 +99,7 @@ class NeuralNetwork:
         self.layers[0].input = self.input
 
         # All hidden layers
-        for i in range(self.n_layers):
+        for i in range(self.n_layers + 1):
             # add bias
             bias_input = self.bias
             if (i == 0): # if first hidden layer, convert to array from ndarray and then add bias in the last index
@@ -144,13 +144,13 @@ class NeuralNetwork:
                     self.layers[i].output[j][k] = result # append output, actually layers[i].output == layers[i+1].input
                     input_next_layer.append(float(result)) # append input for next layer in temporary list (input_next_layer)
 
-                if (i+1 < self.n_layers): # if there is still the next layer
+                if (i < self.n_layers): # if there is still the next layer
                     self.layers[i+1].input.append(input_next_layer) # append input for next layer in layers[i+1].input
 
                 # print(f"Output : {self.layers[i].output}")
 
         # output in the last layer
-        self.output = self.layers[self.n_layers-1].output.copy()
+        self.output = self.layers[-1].output.copy()
 
     # todo
     def error_output(self):
@@ -182,5 +182,6 @@ class NeuralNetwork:
         return
 
 seed(1)
-nn = NeuralNetwork(n_layers=2, n_neuron=[3,4], activation=["sigmoid", "relu"])
+nn = NeuralNetwork(n_layers=2, n_neuron=[3,5], activation=["sigmoid", "relu"])
 nn.forward_propagation()
+print(nn.output)
