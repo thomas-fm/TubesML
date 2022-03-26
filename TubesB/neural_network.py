@@ -1,4 +1,6 @@
 import numpy as np
+from random import seed
+from random import random
 from sklearn.datasets import load_iris
 
 def linear(x):
@@ -74,11 +76,12 @@ class NeuralNetwork:
         for i in range(n_layers):
             # n input = n neuron in layer
             if i == 0:
-                layer = Layer(4, n_neuron[i])
+                layer = Layer(self.n_attr+1, n_neuron[i])
+                layer.weights = [[random() for i in range(self.n_attr+1)] for i in range(n_neuron[i])]
             else:
                 layer = Layer(n_neuron[i-1], n_neuron[i])
+                layer.weights = [[random() for i in range(n_neuron[i-1])] for i in range(n_neuron[i])]
             # initalize weight
-            layer.weights = [1 for i in range(n_neuron[i-1])]
             layer.activations = activation[i]
 
             self.layers.append(layer)
@@ -116,4 +119,5 @@ class NeuralNetwork:
         predict_class = np.dot(np.transpose(input), self.updated_weights)
         return
 
+seed(1)
 nn = NeuralNetwork(n_layers=0)
