@@ -47,13 +47,14 @@ class Layer:
 class NeuralNetwork:
     def __init__(self, n_layers, n_neuron=[], activation=[], 
     learning_rate=0.1, err_threshold=0.01, 
-    max_iter=100, batch_size=1, dataset=load_iris()):
+    max_iter=100, batch_size=1, dataset=load_iris(),
+    n_input=4, n_output=3):
         # Load iris dataset
         self.dataset = dataset # dataset
         self.input = dataset.data # input
         self.target = dataset.target # target
         self.target_names = dataset.target_names # target class name
-        self.n_attr = len(self.input[0]) # n input attribute
+        self.n_attr = n_input # n input attribute
 
         # Neural network
         self.n_layers = n_layers # how many hidden layers
@@ -77,14 +78,15 @@ class NeuralNetwork:
             # n input = n neuron in layer
             if i == 0:
                 layer = Layer(self.n_attr+1, n_neuron[i])
-                layer.weights = [[random() for i in range(self.n_attr+1)] for i in range(n_neuron[i])]
+                layer.weights = [[random() for i in range(self.n_attr+1)] for j in range(n_neuron[i])]
             else:
-                layer = Layer(n_neuron[i-1], n_neuron[i])
-                layer.weights = [[random() for i in range(n_neuron[i-1])] for i in range(n_neuron[i])]
+                layer = Layer(n_neuron[i-1]+1, n_neuron[i])
+                layer.weights = [[random() for i in range(n_neuron[i-1]+1)] for j in range(n_neuron[i])]
             # initalize weight
             layer.activations = activation[i]
 
             self.layers.append(layer)
+            print(layer.weights)
 
     # todo
     def forward_propagation(self):
@@ -120,4 +122,4 @@ class NeuralNetwork:
         return
 
 seed(1)
-nn = NeuralNetwork(n_layers=0)
+nn = NeuralNetwork(n_layers=3, n_neuron=[2, 3, 4], activation=["sigmoid","sigmoid","sigmoid"])
