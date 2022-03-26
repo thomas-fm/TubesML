@@ -161,8 +161,19 @@ class NeuralNetwork:
         return
     
     # todo
-    def update_weights(self):
-        return
+    def update_weights(self, row_output, old_weight, error_term):
+        new_weight_list = []
+
+        # new weight for hidden layers
+        for i in range(len(row_output)):
+            new_weight = old_weight[i] + self.learning_rate * error_term * row_output[i]
+            new_weight_list.append(new_weight)
+
+        # new weight for bias
+        new_weight_list.append(old_weight[-1] + self.learning_rate * error_term * self.bias)
+
+        print(f"new wight: {new_weight_list}")
+        return new_weight_list
     
     # todo
     def back_propagation(self):
@@ -184,4 +195,13 @@ class NeuralNetwork:
 seed(1)
 nn = NeuralNetwork(n_layers=2, n_neuron=[3,5], activation=["sigmoid", "relu"])
 nn.forward_propagation()
-print(nn.output)
+# print(nn.output)
+
+# update weight between first neuron in output layer and first neuron in the last hidden layer
+test_weight = []
+for row_weight in nn.layers[2].weights:
+    test_weight.append(row_weight[0])
+row_output = nn.layers[1].output[0]
+# print(test_weight)
+# print(row_output)
+nn.update_weights(row_output, test_weight, 0.01)
