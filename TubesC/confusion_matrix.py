@@ -1,4 +1,26 @@
 import numpy as np
+from neural_network import NeuralNetwork
+from sklearn import datasets
+import random
+
+iris = datasets.load_iris()
+x = iris.data.tolist()
+y = iris.target.tolist()
+
+# print(x, y)
+
+# target = []
+# for i in range(len(y)):
+#     if y[i] == 0:
+#         target.append([1, 0, 0])
+#     elif y[i] == 1:
+#         target.append([0, 1, 0])
+#     elif y[i] == 2:
+#         target.append([0, 0, 1])
+        
+ffnn = NeuralNetwork(2, [3,2], ["linear", "sigmoid"])
+ffnn.set_predict([[5.1, 3.5, 1.4, 0.2]])
+ffnn.prediction()
 
 #Confusion matrix untuk semua kelas
 def confusionMatrix(y_test, y_pred):
