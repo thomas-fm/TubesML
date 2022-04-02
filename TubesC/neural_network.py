@@ -1,11 +1,19 @@
 import numpy as np
 from random import seed
 from random import random, uniform
+from sklearn import datasets
 from sklearn.datasets import load_iris
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 import graphviz
 import copy
 from random import randint
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
 
 class Data:
     def __init__(self):
@@ -85,15 +93,19 @@ def confusionMatrix(y_test, y_pred):
     return np.array(confusion_matrix)
 
 def accuracy(confusion_matrix):
+    np.seterr(invalid='ignore')
     return np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
 
 def precision(confusion_matrix):
+    np.seterr(invalid='ignore')
     return np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
 
 def recall(confusion_matrix):
+    np.seterr(invalid='ignore')
     return np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=1)
 
 def f1(confusion_matrix):
+    np.seterr(invalid='ignore')
     return 2 * precision(confusion_matrix) * recall(confusion_matrix) / (precision(confusion_matrix) + recall(confusion_matrix))
 
 def summary(confusion_matrix):
@@ -415,6 +427,12 @@ class NeuralNetwork:
 
         return self.output
         # return self.output
+        
+    def prediction2(self):
+        self.forward_propagation(type="predict")
+        self.convert_output_to_class_2()
+        return self.output
+        
     def check_sanity(self):
         for layer in self.layers:
             print(layer.weights)
@@ -427,6 +445,14 @@ class NeuralNetwork:
             elif (self.output[i][0] < self.output[i][1]):
                 self.output_predict[i] = 1 if (self.output[i][1] > self.output[i][2]) else 2
     
+    def convert_output_to_class_2(self):
+        self.output_predict = self.target.copy()
+        for i in range(len(self.output)):
+            if (self.output[i][0] > self.output[i][1]):
+                self.output_predict[i] = 0 if (self.output[i][0] > self.output[i][2]) else 2
+            elif (self.output[i][0] < self.output[i][1]):
+                self.output_predict[i] = 1 if (self.output[i][1] > self.output[i][2]) else 2
+
     def cross_validate(self):
         # shuffle dataset
         label = np.array(self.dataset.data)
@@ -519,17 +545,52 @@ class NeuralNetwork:
         print(f.source)
         f.render(directory='model').replace('\\', '/')
 
+    def testForward(self):
+        self.prediction_forward()
+    
 seed(1)
 
 # Split test
-dataset = load_iris()
-train, test = split_dataset_90_10(dataset)
-nn = NeuralNetwork(n_layers=2, dataset=train, batch_size=2, n_neuron=[3, 2], activation=["sigmoid", "sigmoid"])
-nn.train()
-nn.set_predict(test.data)
-nn.prediction()
+# dataset = load_iris()
+# # train, test = split_dataset_90_10(dataset)
+# nn = NeuralNetwork(n_layers=2, dataset=dataset, batch_size=2, n_neuron=[3, 2], activation=["sigmoid", "sigmoid"])
+# nn.train()
+# # nn.set_input([[5.1, 3.5, 1.4, 0.2]])
+# # print(test.data)
+# # nn.set_predict(test.data)
+# nn.set_predict(dataset.data)
+# nn.prediction2()
+# print(nn.output_predict)
 
-print("--- Split test ---")
-summary(confusionMatrix(test.target, nn.output_predict))
+# print("--- Split test ---")
+# summary(confusionMatrix(dataset.target, nn.output_predict))
 # nn.cross_validate()
 # nn.draw_model()
+
+##NOMOR 2
+
+#UJI DENGAN MATRIX CONFUSION
+dataset = load_iris()
+nn = NeuralNetwork(n_layers=2, dataset=dataset, batch_size=2, n_neuron=[3, 2], activation=["sigmoid", "sigmoid"])
+nn.train()
+nn.set_predict(dataset.data)
+nn.prediction2()
+
+print("============ UJI DENGAN MATRIX CONFUSSION =================")
+summary(confusionMatrix(dataset.target, nn.output_predict))
+
+#UJI DENGAN SKLEARN
+print("============ UJI DENGAN SKLEARN =================")
+# Normalize
+scaler = StandardScaler()
+scaler.fit(dataset.data)
+
+train_data = scaler.transform(dataset.data)
+
+clf = MLPClassifier(solver='sgd', hidden_layer_sizes=(3, 2), max_iter=1000, batch_size=2)
+clf.fit(train_data, dataset.target)  
+print(confusion_matrix(dataset.target, clf.predict(train_data)))
+print(accuracy_score(dataset.target, clf.predict(train_data), normalize=False)/float(150))
+print(precision_score(dataset.target, clf.predict(train_data), average=None))
+print(recall_score(dataset.target, clf.predict(train_data), average=None))
+print(f1_score(dataset.target, clf.predict(train_data), average=None))
