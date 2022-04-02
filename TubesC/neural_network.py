@@ -5,6 +5,13 @@ from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
 import graphviz
 import copy
+from random import randint
+
+class Data:
+    def __init__(self):
+        self.data = []
+        self.target = []
+        self.target_names = []
 
 def linear(x):
     return x
@@ -40,6 +47,62 @@ def relu_derivative(x):
 def softmax_derivative(x):
     return [-(1-el) for el in x]
 
+def split_dataset_90_10(dataset):
+    data_length = len(dataset.target)
+    n_train = round(data_length * 9/10)
+    n_test = data_length - n_train
+    
+#     train = { "data": [], "target":[] }
+#     test = { "data": [], "target":[] }
+    train = Data()
+    test = Data()
+    train.target_names = dataset.target_names
+    test.target_names = dataset.target_names
+
+    test_idx = []
+    while len(test_idx) < n_test:
+        idx = randint(0, 149)
+        try:
+            test_idx.index(idx)
+        except:
+            test_idx.append(idx)
+            test.data.append(dataset.data[idx])
+            test.target.append(dataset.target[idx])
+            
+    for i in range(data_length):
+        try:
+            test_idx.index(i)
+        except:
+            train.data.append(dataset.data[i])
+            train.target.append(dataset.target[i])
+    return train, test
+
+def confusionMatrix(y_test, y_pred):
+    x = len(set(y_test))
+    confusion_matrix = [[0 for i in range(x)] for j in range(x)]
+    for i in range(len(y_test)):
+        confusion_matrix[y_test[i]][y_pred[i]] += 1
+    return np.array(confusion_matrix)
+
+def accuracy(confusion_matrix):
+    return np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
+
+def precision(confusion_matrix):
+    return np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
+
+def recall(confusion_matrix):
+    return np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=1)
+
+def f1(confusion_matrix):
+    return 2 * precision(confusion_matrix) * recall(confusion_matrix) / (precision(confusion_matrix) + recall(confusion_matrix))
+
+def summary(confusion_matrix):
+    print("Confusion Matrix:")
+    print(confusion_matrix)
+    print("Accuracy:", accuracy(confusion_matrix))
+    print("Precision:", precision(confusion_matrix))
+    print("Recall:", recall(confusion_matrix))
+    print("F1:", f1(confusion_matrix))
 
 class Layer:
     def __init__(self, n_input, n_nodes):
@@ -348,13 +411,21 @@ class NeuralNetwork:
 
     def prediction(self):
         self.forward_propagation(type="predict")
+        self.convert_output_to_class()
 
         return self.output
         # return self.output
     def check_sanity(self):
         for layer in self.layers:
             print(layer.weights)
-    
+
+    def convert_output_to_class(self):
+        self.output_predict = self.predict.copy()
+        for i in range(len(self.output)):
+            if (self.output[i][0] > self.output[i][1]):
+                self.output_predict[i] = 0 if (self.output[i][0] > self.output[i][2]) else 2
+            elif (self.output[i][0] < self.output[i][1]):
+                self.output_predict[i] = 1 if (self.output[i][1] > self.output[i][2]) else 2
     
     def cross_validate(self):
         # shuffle dataset
@@ -450,13 +521,15 @@ class NeuralNetwork:
 
 seed(1)
 
-# Normalize data
+# Split test
 dataset = load_iris()
-
-nn = NeuralNetwork(n_layers=2, dataset=dataset, batch_size=2, n_neuron=[3, 2], activation=["sigmoid", "sigmoid"])
-# nn.forward_propagation()
+train, test = split_dataset_90_10(dataset)
+nn = NeuralNetwork(n_layers=2, dataset=train, batch_size=2, n_neuron=[3, 2], activation=["sigmoid", "sigmoid"])
 nn.train()
-nn.set_predict([[1.0, 6.5, 2.0, 3.5]])
+nn.set_predict(test.data)
 nn.prediction()
-nn.cross_validate()
+
+print("--- Split test ---")
+summary(confusionMatrix(test.target, nn.output_predict))
+# nn.cross_validate()
 # nn.draw_model()
