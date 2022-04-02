@@ -29,7 +29,7 @@ def linear_derivative(x):
 
 def sigmoid_derivative(x):
     s = 1 / (1 + np.exp(-x))
-    return s * (1 - s)
+    return x * (1 - x)
 
 # todo
 def relu_derivative(x):
@@ -345,12 +345,77 @@ class NeuralNetwork:
 
     def prediction(self):
         self.forward_propagation(type="predict")
-        print(self.output)
+
+        return self.output
         # return self.output
     def check_sanity(self):
         for layer in self.layers:
             print(layer.weights)
     
+    
+    def cross_validate(self):
+        # shuffle dataset
+        label = np.array(self.dataset.data)
+        target = np.array(self.dataset.target)
+
+        indices = np.arrange(label.shape[0])
+        np.random.shuffle(indices)
+
+        label = label[indices]
+        target = target[indices]
+
+        # split into 10
+        n = len(self.dataset.target)
+        j = np.ceil(n / 10)
+
+        total_mse = 0
+
+        for it in range(10):
+            data_train_label = label[:]
+            data_train_target = target[:]
+
+            del data_train_label[it*j:it+j]
+            del data_train_target[it*j:it+j]
+
+            self.input = self.data_train_label
+            self.target = self.data_train_target
+
+            data_test_label = label[it*j:it+j]
+            data_test_target = target[it*j:it+j]
+            self.predict = data_test_label
+
+            # train and predict
+            self.train()
+            # calculate error
+            pred = self.prediction()
+            expec = []
+
+            # transform to [x,x,x]
+            for i in range(len(self.output)):
+                expected_target = []
+                if (data_test_label[i] == 0):
+                    expected_target = [1, 0, 0]
+                if (data_test_label[i] == 1):
+                    expected_target = [0, 1, 0]
+                if (data_test_label[i] == 2):
+                    expected_target = [0, 0, 1]
+                expec.append(expected_target)
+
+            # calculate the MSE
+            pred = np.concatenate(pred).ravel()
+            expec = np.concatenate(expec).ravel()
+
+            sum_mse_cv = 0
+
+            for i in range(len(pred)):
+                sum_mse += pow(pred[i] - expec[i], 2)
+
+            sum_mse_cv = float(sum_mse/len(pred))
+            total_mse += sum_mse_cv
+
+        mse_cv = float(total_mse / 10)
+        print(f"Total error: {mse_cv}")
+
     def draw_model(self):
         f = graphviz.Digraph('Feed Forward Neural Network', filename="model")
         f.attr('node', shape='circle', width='1.0')
