@@ -4,6 +4,7 @@ from random import random, uniform
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
 import graphviz
+import copy
 
 def linear(x):
     return x
@@ -62,7 +63,7 @@ class NeuralNetwork:
                 n_input=4, n_output=3):
         # Load iris dataset
         self.dataset = dataset  # dataset
-        # self.input = dataset.data  # input
+        self.input = dataset.data  # input
         self.target = dataset.target  # target
         self.target_names = dataset.target_names  # target class name
         self.n_attr = n_input  # n input attribute
@@ -322,12 +323,14 @@ class NeuralNetwork:
     # todo
     def train(self):
         it = 0
+        input_temp = copy.copy(self.input)
+
         while ((it < self.max_iter) and (self.err_threshold < self.mse)):
             output = []
             error = []
-            for i in range(int(len(self.dataset.data)/self.batch_size)):
+            for i in range(int(len(self.input)/self.batch_size)):
                 idx = i * self.batch_size
-                self.input = self.dataset.data[idx:idx+self.batch_size]
+                self.input = input_temp[idx:idx+self.batch_size]
                 self.forward_propagation(type="train")
                 self.back_propagation()
                 output.append(self.layers[self.n_layers].output)
@@ -358,7 +361,7 @@ class NeuralNetwork:
         label = np.array(self.dataset.data)
         target = np.array(self.dataset.target)
 
-        indices = np.arrange(label.shape[0])
+        indices = np.arange(label.shape[0])
         np.random.shuffle(indices)
 
         label = label[indices]
@@ -366,22 +369,22 @@ class NeuralNetwork:
 
         # split into 10
         n = len(self.dataset.target)
-        j = np.ceil(n / 10)
+        j = int(np.ceil(n / 10))
 
         total_mse = 0
 
         for it in range(10):
-            data_train_label = label[:]
-            data_train_target = target[:]
+            data_train_label = copy.copy(label)
+            data_train_target = copy.copy(target)
 
-            del data_train_label[it*j:it+j]
-            del data_train_target[it*j:it+j]
+            data_train_label = np.concatenate((data_train_label[0:it*j], data_train_label[it*j:it*j+j]))
+            data_train_target = np.concatenate((data_train_target[0:it*j], data_train_target[it*j:it*j+j]))
 
-            self.input = self.data_train_label
-            self.target = self.data_train_target
+            self.input = data_train_label
+            self.target = data_train_target
 
-            data_test_label = label[it*j:it+j]
-            data_test_target = target[it*j:it+j]
+            data_test_label = label[it*j:it*j+j]
+            data_test_target = target[it*j:it*j+j]
             self.predict = data_test_label
 
             # train and predict
@@ -393,11 +396,12 @@ class NeuralNetwork:
             # transform to [x,x,x]
             for i in range(len(self.output)):
                 expected_target = []
-                if (data_test_label[i] == 0):
+                # print(data_test_label[i])
+                if (data_test_target[i] == 0):
                     expected_target = [1, 0, 0]
-                if (data_test_label[i] == 1):
+                if (data_test_target[i] == 1):
                     expected_target = [0, 1, 0]
-                if (data_test_label[i] == 2):
+                if (data_test_target[i] == 2):
                     expected_target = [0, 0, 1]
                 expec.append(expected_target)
 
@@ -408,9 +412,9 @@ class NeuralNetwork:
             sum_mse_cv = 0
 
             for i in range(len(pred)):
-                sum_mse += pow(pred[i] - expec[i], 2)
+                sum_mse_cv += pow(pred[i] - expec[i], 2)
 
-            sum_mse_cv = float(sum_mse/len(pred))
+            sum_mse_cv = float(sum_mse_cv/len(pred))
             total_mse += sum_mse_cv
 
         mse_cv = float(total_mse / 10)
@@ -454,4 +458,5 @@ nn = NeuralNetwork(n_layers=2, dataset=dataset, batch_size=2, n_neuron=[3, 2], a
 nn.train()
 nn.set_predict([[1.0, 6.5, 2.0, 3.5]])
 nn.prediction()
+nn.cross_validate()
 # nn.draw_model()
