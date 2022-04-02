@@ -31,7 +31,7 @@ def linear_derivative(x):
 
 def sigmoid_derivative(x):
     s = 1 / (1 + np.exp(-x))
-    return s * (1 - s)
+    return x * (1 - x)
 
 # todo
 
