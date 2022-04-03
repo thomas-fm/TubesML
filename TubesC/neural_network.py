@@ -94,19 +94,19 @@ def confusionMatrix(y_test, y_pred):
 
 def accuracy(confusion_matrix):
     np.seterr(invalid='ignore')
-    return np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
+    return np.nan_to_num(np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix))
 
 def precision(confusion_matrix):
     np.seterr(invalid='ignore')
-    return np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0)
+    return np.nan_to_num(np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=0))
 
 def recall(confusion_matrix):
     np.seterr(invalid='ignore')
-    return np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=1)
+    return np.nan_to_num(np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=1))
 
 def f1(confusion_matrix):
     np.seterr(invalid='ignore')
-    return 2 * precision(confusion_matrix) * recall(confusion_matrix) / (precision(confusion_matrix) + recall(confusion_matrix))
+    return np.nan_to_num(2 * precision(confusion_matrix) * recall(confusion_matrix) / (precision(confusion_matrix) + recall(confusion_matrix)))
 
 def summary(confusion_matrix):
     print("Confusion Matrix:")
@@ -132,10 +132,7 @@ class Layer:
         self.updated_weights = []
 
 class NeuralNetwork:
-    def __init__(self, n_layers, n_neuron=[], activation=[],
-                learning_rate=0.1, err_threshold=0.01,
-                max_iter=100, batch_size=2, dataset=load_iris(),
-                n_input=4, n_output=3):
+    def __init__(self, file_name, learning_rate=0.1, err_threshold=0.01, max_iter=100, batch_size=2, dataset=load_iris(), n_input=4, n_output=3):
         # Load iris dataset
         self.dataset = dataset  # dataset
         self.input = dataset.data  # input
@@ -144,9 +141,6 @@ class NeuralNetwork:
         self.n_attr = n_input  # n input attribute
 
         # Neural network
-        self.n_layers = n_layers  # how many hidden layers
-        self.n_neuron = n_neuron  # how many neuron for each hidden layer
-        self.activation = activation  # activation for each layer
         self.learning_rate = learning_rate
         self.err_threshold = err_threshold
         self.max_iter = max_iter
@@ -163,34 +157,60 @@ class NeuralNetwork:
         self.weights = []  # last updated weight
         self.predict = []
 
-        for i in range(n_layers):
-            # n input = n neuron in layer
-            if i == 0:
-                layer = Layer(self.n_attr+1, n_neuron[i])
-                layer.weights = [
-                    [uniform(-0.5, 0.5) for i in range(n_neuron[i])] for j in range(self.n_attr+1)]
-            else:
-                layer = Layer(n_neuron[i-1]+1, n_neuron[i])
-                layer.weights = [
-                    [uniform(-0.5, 0.5) for i in range(n_neuron[i])] for j in range(n_neuron[i-1]+1)]
-            # initalize weight
-            layer.activations = activation[i]
+        with open(file_name, "r") as f:
+            line = f.readline().split()
+            self.n_layers = len(line) - 1 # how many hidden layers + ouput
+            
+            for i in range(self.n_layers + 1):
+                if i == 0:
+                    self.layers.append(Layer(self.n_attr, int(line[i])))
+                else:
+                    self.layers.append(Layer(int(line[i-1]), int(line[i])))
 
-            self.layers.append(layer)
-
-        # add last layer, last hidden to output
-        layer = Layer(n_neuron[-1] + 1, n_output)
-        layer.weights = [[uniform(-0.5, 0.5) for i in range(n_output)] for j in range(n_neuron[-1] + 1)]
-        layer.activations = activation[-1]
-        self.layers.append(layer)
-    
-    # def getWeight(self):
-    #     weight = []
-    #     for x in self.n_neuron:
-    #         weight.append(x.weights)
-    #     return weight
+            for i in range(self.n_layers + 1):
+                f.readline()
+                for j in range(self.layers[i].n_input + 2):
+                    weight = []
+                    line = f.readline().strip(" \n").split(" ")
+                    for k in range(len(line)):
+                        if (j == 0):
+                            self.layers[i].activations = str(line[k])
+                        else:
+                            weight.append(float(line[k]))
+                    if j!=0:
+                        self.layers[i].weights.append(weight)
 
     # todo
+    def save_model(self, filename):
+        new_file = []
+        with open(filename) as file:
+            lines = [line.rstrip().split() for line in file]
+
+            new_file.append(lines[0])
+            new_file.append(lines[1])
+            
+            for i in range(self.n_layers + 1):
+                new_file.append([self.layers[i].activations])
+                for new_weight in self.layers[i].updated_weights:
+                    new_file.append(new_weight)
+                if i < self.n_layers - 1:
+                    new_file.append('')
+                    
+            for line in range(len(new_file)):
+                str_line = ''
+                for i in range(len(new_file[line])):
+                    str_line += str(new_file[line][i])
+                    if i < len(new_file[line]) - 1:
+                        str_line += ' '
+                new_file[line] = str_line
+                
+        new_filename = filename.split(".")[0] + "_updated_weights"
+        with open('model/' + new_filename, 'w') as f:
+            for line in range(len(new_file)):
+                f.write(new_file[line])
+                if line < len(new_file) - 1:
+                    f.write('\n')
+
     def forward_propagation(self, type):
         for i in range(self.n_layers + 1):
             self.layers[i].input = []
@@ -413,17 +433,17 @@ class NeuralNetwork:
             it += 1
             self.error = self.error
             
-        print(self.mse)
-        print(it)
+        # print(self.mse)
+        # print(it)
 
         return
 
     def set_predict(self, input):
         self.predict = input
 
-    def prediction(self):
+    def prediction(self, test_target):
         self.forward_propagation(type="predict")
-        self.convert_output_to_class()
+        self.convert_output_to_class(test_target)
 
         return self.output
         # return self.output
@@ -437,8 +457,8 @@ class NeuralNetwork:
         for layer in self.layers:
             print(layer.weights)
 
-    def convert_output_to_class(self):
-        self.output_predict = self.predict.copy()
+    def convert_output_to_class(self, test_target):
+        self.output_predict = test_target.copy()
         for i in range(len(self.output)):
             if (self.output[i][0] > self.output[i][1]):
                 self.output_predict[i] = 0 if (self.output[i][0] > self.output[i][2]) else 2
@@ -469,6 +489,10 @@ class NeuralNetwork:
         j = int(np.ceil(n / 10))
 
         total_mse = 0
+        acc_score = 0
+        prec_score = 0
+        f1_score = 0
+        rec_score = 0
 
         for it in range(10):
             data_train_label = copy.copy(label)
@@ -486,8 +510,10 @@ class NeuralNetwork:
 
             # train and predict
             self.train()
+
             # calculate error
             pred = self.prediction()
+            self.convert_output_to_class_2()
             expec = []
 
             # transform to [x,x,x]
@@ -506,6 +532,15 @@ class NeuralNetwork:
             pred = np.concatenate(pred).ravel()
             expec = np.concatenate(expec).ravel()
 
+            # calculate confusion matrix
+            # print(self.output_predict)
+            print(self.output_predict)
+            confusion_matrix = confusionMatrix(data_test_target, self.output_predict)
+            acc_score += accuracy(confusion_matrix)
+            f1_score += f1(confusion_matrix)
+            rec_score += recall(confusion_matrix)
+            prec_score += precision(confusion_matrix)
+
             sum_mse_cv = 0
 
             for i in range(len(pred)):
@@ -515,7 +550,13 @@ class NeuralNetwork:
             total_mse += sum_mse_cv
 
         mse_cv = float(total_mse / 10)
-        print(f"Total error: {mse_cv}")
+        print(f"MSE Score: {1 - mse_cv}")
+        print(f"Average accurarcy: {acc_score/10}")
+        # print(f"Precision: {prec_score/10}")
+        # print(f"F1: {f1_score/10}")
+        # print(f"Recall: {rec_score/10}")
+
+
 
     def draw_model(self):
         f = graphviz.Digraph('Feed Forward Neural Network', filename="model")
@@ -549,48 +590,53 @@ class NeuralNetwork:
         self.prediction_forward()
     
 seed(1)
-
+dataset = load_iris()
+#
+# nn = NeuralNetwork(file_name="model1.txt",dataset=dataset, batch_size=2)
 # Split test
 # dataset = load_iris()
-# # train, test = split_dataset_90_10(dataset)
+train, test = split_dataset_90_10(dataset)
+# nn.train()
+
+nn = NeuralNetwork(file_name="model1.txt",dataset=dataset, batch_size=2)
+nn.train()
+# # # nn.set_input([[5.1, 3.5, 1.4, 0.2]])
+# # # print(test.data)
+nn.set_predict(test.data)
+# # nn.set_predict(dataset.data)
+nn.prediction(test.target)
+# # print(nn.output_predict)
+
+print("--- Split test ---")
+summary(confusionMatrix(test.target, nn.output_predict))
+# # nn.cross_validate()
+# # nn.draw_model()
+
+# ##NOMOR 2
+
+# #UJI DENGAN MATRIX CONFUSION
+# dataset = load_iris()
 # nn = NeuralNetwork(n_layers=2, dataset=dataset, batch_size=2, n_neuron=[3, 2], activation=["sigmoid", "sigmoid"])
 # nn.train()
-# # nn.set_input([[5.1, 3.5, 1.4, 0.2]])
-# # print(test.data)
-# # nn.set_predict(test.data)
 # nn.set_predict(dataset.data)
-# nn.prediction2()
-# print(nn.output_predict)
-
-# print("--- Split test ---")
-# summary(confusionMatrix(dataset.target, nn.output_predict))
+# # nn.prediction2()
 # nn.cross_validate()
-# nn.draw_model()
 
-##NOMOR 2
+# print("============ UJI DENGAN MATRIX CONFUSSION =================")
+# summary(confusionMatrix(dataset.target, nn.output_predict))
 
-#UJI DENGAN MATRIX CONFUSION
-dataset = load_iris()
-nn = NeuralNetwork(n_layers=2, dataset=dataset, batch_size=2, n_neuron=[3, 2], activation=["sigmoid", "sigmoid"])
-nn.train()
-nn.set_predict(dataset.data)
-nn.prediction2()
+# #UJI DENGAN SKLEARN
+# print("============ UJI DENGAN SKLEARN =================")
+# # Normalize
+# scaler = StandardScaler()
+# scaler.fit(dataset.data)
 
-print("============ UJI DENGAN MATRIX CONFUSSION =================")
-summary(confusionMatrix(dataset.target, nn.output_predict))
+# train_data = scaler.transform(dataset.data)
 
-#UJI DENGAN SKLEARN
-print("============ UJI DENGAN SKLEARN =================")
-# Normalize
-scaler = StandardScaler()
-scaler.fit(dataset.data)
-
-train_data = scaler.transform(dataset.data)
-
-clf = MLPClassifier(solver='sgd', hidden_layer_sizes=(3, 2), max_iter=1000, batch_size=2)
-clf.fit(train_data, dataset.target)  
-print(confusion_matrix(dataset.target, clf.predict(train_data)))
-print(accuracy_score(dataset.target, clf.predict(train_data), normalize=False)/float(150))
-print(precision_score(dataset.target, clf.predict(train_data), average=None))
-print(recall_score(dataset.target, clf.predict(train_data), average=None))
-print(f1_score(dataset.target, clf.predict(train_data), average=None))
+# clf = MLPClassifier(solver='sgd', hidden_layer_sizes=(3, 2), max_iter=1000, batch_size=2)
+# clf.fit(train_data, dataset.target)  
+# print(confusion_matrix(dataset.target, clf.predict(train_data)))
+# print(accuracy_score(dataset.target, clf.predict(train_data), normalize=False)/float(150))
+# print(precision_score(dataset.target, clf.predict(train_data), average=None))
+# print(recall_score(dataset.target, clf.predict(train_data), average=None))
+# print(f1_score(dataset.target, clf.predict(train_data), average=None))
